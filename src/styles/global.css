@@ -1,0 +1,122 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: #212529;
+    direction: rtl;
+}
+
+button,
+input,
+textarea,
+select {
+    font: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+ul {
+    list-style: none;
+}
+
+img {
+    max-width: 100%;
+    display: block;
+}
+
+.container {
+    width: min(1200px, 92%);
+    margin: 0 auto;
+}
+
+.app-layout {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.site-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 18px 0;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+.logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2563eb;
+}
+
+.main-nav,
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.main-nav a {
+    color: #4b5563;
+}
+
+.main-nav a.active {
+    color: #2563eb;
+    font-weight: bold;
+}
+
+.header-actions a {
+    padding: 9px 14px;
+    border-radius: 6px;
+}
+
+.cart-link {
+    background-color: #f3f4f6;
+}
+
+.account-link {
+    background-color: #2563eb;
+    color: white;
+}
+
+.main-content {
+    flex: 1;
+}
+
+.page-container {
+    width: min(1200px, 92%);
+    margin: 40px auto;
+    min-height: 300px;
+}
+
+.page-container h1 {
+    margin-bottom: 16px;
+}
+
+.site-footer {
+    background-color: #1f2937;
+    color: white;
+    padding: 25px 0;
+    text-align: center;
+}
