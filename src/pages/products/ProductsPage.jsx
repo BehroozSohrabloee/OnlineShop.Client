@@ -1,15 +1,10 @@
-import { useMemo, useState } from "react";
+
+import { useEffect, useState } from "react";
 import { PackageSearch } from "lucide-react";
 
 import ProductCard from "../../components/ui/ProductCard";
 import ProductFilters from "../../components/ui/ProductFilters";
-import { sampleProducts } from "../../data/sampleProducts";
-
-const categories = [
-    { id: 1, name: "صوتی و تصویری" },
-    { id: 2, name: "لوازم دیجیتال" },
-    { id: 3, name: "پوشاک" }
-];
+import { getProducts } from "../../services/api/productService";
 
 const PAGE_SIZE = 8;
 
@@ -19,66 +14,120 @@ function ProductsPage() {
     const [sortBy, setSortBy] = useState("default");
     const [currentPage, setCurrentPage] = useState(1);
 
-    const filteredProducts = useMemo(() => {
-        let result = [...sampleProducts];
+    const [products, setProducts] = useState([]);
+    const [totalCount, setTotalCount] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
 
-        // Search
-        if (searchTerm.trim()) {
-            result = result.filter((product) =>
-                product.name
-                    .toLowerCase()
-                    .includes(searchTerm.trim().toLowerCase())
-            );
-        }
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
 
-        // Category filter
-        if (selectedCategory !== "all") {
-            result = result.filter(
-                (product) => product.category === selectedCategory
-            );
-        }
+    useEffect(() => {
+        const controller = new AbortController();
 
-        // Sorting
-        switch (sortBy) {
-            case "price-asc":
-                result.sort(
-                    (a, b) =>
-                        (a.discountPrice ?? a.price) -
-                        (b.discountPrice ?? b.price)
+        const fetchProducts = async () => {
+            try {
+                setLoading(true);
+                setError("");
+
+                const sortOptions = {
+                    default: {
+                        sortBy: "CreatedAt",
+                        sortDescending: true
+                    },
+                    "price-asc": {
+                        sortBy: "Price",
+                        sortDescending: false
+                    },
+                    "price-desc": {
+                        sortBy: "Price",
+                        sortDescending: true
+                    },
+                    name: {
+                        sortBy: "Name",
+                        sortDescending: false
+                    }
+                };
+
+                const sorting = sortOptions[sortBy] ?? sortOptions.default;
+
+                const response = await getProducts({
+                    pageNumber: currentPage, pageSize: PAGE_SIZE, searchTerm, ...sorting, signal: controller.signal
+                });
+
+                // // پشتیبانی از ساختار Result و PagedResult
+                // const result = response.value ?? response.data ?? response;
+                // const pageData = result.value ?? result.data ?? result;
+
+                // if (response.isSuccess === false || result.isSuccess === false) {
+                //     throw new Error(
+                //         response.error?.message ??
+                //         result.error?.message ??
+                //         "دریافت محصولات ناموفق بود."
+                //     );
+                // }
+
+                // const items = pageData.items ?? pageData.Items ?? [];
+
+                // دریافت مستقیم اطلاعات صفحه‌بندی‌شده از API
+                const items = response.items ?? [];
+
+                const mappedProducts = items.map((product) => ({
+                    ...product,
+                    category: product.categoryName,
+                    image: product.primaryImageUrl,
+                    variantId: product.defaultVariantId
+                }));
+
+                setProducts(mappedProducts);
+
+                setTotalCount(response.totalCount ?? items.length);
+
+                setTotalPages(
+                    response.totalPages ??
+                    Math.ceil((response.totalCount ?? items.length) / PAGE_SIZE)
                 );
-                break;
 
-            case "price-desc":
-                result.sort(
-                    (a, b) =>
-                        (b.discountPrice ?? b.price) -
-                        (a.discountPrice ?? a.price)
-                );
-                break;
+                // const mappedProducts = items.map((product) => ({
+                //     ...product,
+                //     id: product.id,
+                //     name: product.name,
+                //     category: product.categoryName,
+                //     image: product.primaryImageUrl,
+                //     price: product.price ?? 0,
+                //     discountPrice: product.discountPrice,
+                //     stockQuantity: product.stockQuantity,
+                //     variantId: product.defaultVariantId
+                // }));
 
-            case "name":
-                result.sort((a, b) =>
-                    a.name.localeCompare(b.name, "fa")
-                );
-                break;
+                // setProducts(mappedProducts);
+                // setTotalCount(
+                //     pageData.totalCount ??
+                //     pageData.TotalCount ??
+                //     items.length
+                // );
+                // setTotalPages(
+                //     pageData.totalPages ??
+                //     pageData.TotalPages ??
+                //     Math.ceil(
+                //         (pageData.totalCount ?? pageData.TotalCount ?? items.length)
+                //         / PAGE_SIZE
+                //     )
+                // );
+            } catch (err) {
+                if (err.name !== "AbortError") {
+                    setError(err.message || "خطا در دریافت محصولات");
+                }
+            } finally {
+                if (!controller.signal.aborted) {
+                    setLoading(false);
+                }
+            }
+        };
 
-            case "rating":
-                result.sort((a, b) => b.rating - a.rating);
-                break;
+        fetchProducts();
 
-            default:
-                break;
-        }
-
-        return result;
-    }, [searchTerm, selectedCategory, sortBy]);
-
-    const totalPages = Math.ceil(filteredProducts.length / PAGE_SIZE);
-
-    const paginatedProducts = filteredProducts.slice(
-        (currentPage - 1) * PAGE_SIZE,
-        currentPage * PAGE_SIZE
-    );
+        return () => controller.abort();
+    }, [searchTerm, currentPage, sortBy]);
 
     const handleSearchChange = (value) => {
         setSearchTerm(value);
@@ -92,6 +141,13 @@ function ProductsPage() {
 
     const handleSortChange = (value) => {
         setSortBy(value);
+        setCurrentPage(1);
+    };
+
+    const clearFilters = () => {
+        setSearchTerm("");
+        setSelectedCategory("all");
+        setSortBy("default");
         setCurrentPage(1);
     };
 
@@ -119,50 +175,51 @@ function ProductsPage() {
                 onCategoryChange={handleCategoryChange}
                 sortBy={sortBy}
                 onSortChange={handleSortChange}
-                categories={categories}
+                categories={[]}
             />
 
             <div className="products-result-info">
                 <span>
-                    تعداد محصولات: {filteredProducts.length}
+                    تعداد محصولات: {totalCount}
                 </span>
             </div>
 
-            {paginatedProducts.length > 0 ? (
+            {loading ? (
+                <div className="products-empty-state">
+                    <p>در حال دریافت محصولات...</p>
+                </div>
+            ) : error ? (
+                <div className="products-empty-state">
+                    <PackageSearch size={55} />
+                    <h2>دریافت محصولات با خطا مواجه شد</h2>
+                    <p>{error}</p>
+                    <button onClick={() => setCurrentPage(1)}>
+                        تلاش مجدد
+                    </button>
+                </div>
+            ) : products.length > 0 ? (
                 <div className="products-grid">
-
-                    {paginatedProducts.map((product) => (
+                    {products.map((product) => (
                         <ProductCard
                             key={product.id}
                             product={product}
                         />
                     ))}
-
                 </div>
             ) : (
                 <div className="products-empty-state">
                     <PackageSearch size={55} />
-
                     <h2>محصولی پیدا نشد!</h2>
-
                     <p>
                         عبارت جستجو یا فیلترهای انتخابی را تغییر دهید.
                     </p>
-
-                    <button
-                        onClick={() => {
-                            setSearchTerm("");
-                            setSelectedCategory("all");
-                            setSortBy("default");
-                            setCurrentPage(1);
-                        }}
-                    >
+                    <button onClick={clearFilters}>
                         پاک کردن فیلترها
                     </button>
                 </div>
             )}
 
-            {totalPages > 1 && (
+            {!loading && !error && totalPages > 1 && (
                 <div className="pagination">
 
                     <button

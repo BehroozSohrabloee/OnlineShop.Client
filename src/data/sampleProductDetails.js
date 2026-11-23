@@ -201,7 +201,7 @@ export const sampleProductDetails = [
 
         variants: [
             {
-                id: "cam-black",
+                id: "33EF9C6C-9173-4525-9D5B-4E752A596FC4",
                 name: "مشکی",
                 sku: "CAMERA-BLACK",
                 price: 12500000,
@@ -211,7 +211,7 @@ export const sampleProductDetails = [
                 attributes: [{ name: "رنگ", value: "مشکی" }]
             },
             {
-                id: "cam-silver",
+                id: "B41FA153-0CEC-4186-8D22-96178067260A",
                 name: "نقره‌ای",
                 sku: "CAMERA-SILVER",
                 price: 12500000,
